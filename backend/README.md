@@ -208,6 +208,7 @@ After CloudFormation deployment:
 
 2. **Frontend Config Updated**:
    The frontend config has been updated to point to the deployed EC2 instance:
+
    ```typescript
    export const API_BASE_URL = "http://13.233.63.197:3000";
    ```
