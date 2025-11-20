@@ -1,0 +1,50 @@
+import { Command as $Command } from "@smithy/smithy-client";
+import { MetadataBearer as __MetadataBearer } from "@smithy/types";
+import {
+  DeleteAdapterRequest,
+  DeleteAdapterResponse,
+} from "../models/models_0";
+import {
+  ServiceInputTypes,
+  ServiceOutputTypes,
+  TextractClientResolvedConfig,
+} from "../TextractClient";
+export { __MetadataBearer };
+export { $Command };
+export interface DeleteAdapterCommandInput extends DeleteAdapterRequest {}
+export interface DeleteAdapterCommandOutput
+  extends DeleteAdapterResponse,
+    __MetadataBearer {}
+declare const DeleteAdapterCommand_base: {
+  new (
+    input: DeleteAdapterCommandInput
+  ): import("@smithy/smithy-client").CommandImpl<
+    DeleteAdapterCommandInput,
+    DeleteAdapterCommandOutput,
+    TextractClientResolvedConfig,
+    ServiceInputTypes,
+    ServiceOutputTypes
+  >;
+  new (
+    input: DeleteAdapterCommandInput
+  ): import("@smithy/smithy-client").CommandImpl<
+    DeleteAdapterCommandInput,
+    DeleteAdapterCommandOutput,
+    TextractClientResolvedConfig,
+    ServiceInputTypes,
+    ServiceOutputTypes
+  >;
+  getEndpointParameterInstructions(): import("@smithy/middleware-endpoint").EndpointParameterInstructions;
+};
+export declare class DeleteAdapterCommand extends DeleteAdapterCommand_base {
+  protected static __types: {
+    api: {
+      input: DeleteAdapterRequest;
+      output: {};
+    };
+    sdk: {
+      input: DeleteAdapterCommandInput;
+      output: DeleteAdapterCommandOutput;
+    };
+  };
+}

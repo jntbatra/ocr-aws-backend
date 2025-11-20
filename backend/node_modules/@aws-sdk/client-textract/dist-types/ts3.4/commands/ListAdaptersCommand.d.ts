@@ -1,0 +1,47 @@
+import { Command as $Command } from "@smithy/smithy-client";
+import { MetadataBearer as __MetadataBearer } from "@smithy/types";
+import { ListAdaptersRequest, ListAdaptersResponse } from "../models/models_0";
+import {
+  ServiceInputTypes,
+  ServiceOutputTypes,
+  TextractClientResolvedConfig,
+} from "../TextractClient";
+export { __MetadataBearer };
+export { $Command };
+export interface ListAdaptersCommandInput extends ListAdaptersRequest {}
+export interface ListAdaptersCommandOutput
+  extends ListAdaptersResponse,
+    __MetadataBearer {}
+declare const ListAdaptersCommand_base: {
+  new (
+    input: ListAdaptersCommandInput
+  ): import("@smithy/smithy-client").CommandImpl<
+    ListAdaptersCommandInput,
+    ListAdaptersCommandOutput,
+    TextractClientResolvedConfig,
+    ServiceInputTypes,
+    ServiceOutputTypes
+  >;
+  new (
+    ...[input]: [] | [ListAdaptersCommandInput]
+  ): import("@smithy/smithy-client").CommandImpl<
+    ListAdaptersCommandInput,
+    ListAdaptersCommandOutput,
+    TextractClientResolvedConfig,
+    ServiceInputTypes,
+    ServiceOutputTypes
+  >;
+  getEndpointParameterInstructions(): import("@smithy/middleware-endpoint").EndpointParameterInstructions;
+};
+export declare class ListAdaptersCommand extends ListAdaptersCommand_base {
+  protected static __types: {
+    api: {
+      input: ListAdaptersRequest;
+      output: ListAdaptersResponse;
+    };
+    sdk: {
+      input: ListAdaptersCommandInput;
+      output: ListAdaptersCommandOutput;
+    };
+  };
+}

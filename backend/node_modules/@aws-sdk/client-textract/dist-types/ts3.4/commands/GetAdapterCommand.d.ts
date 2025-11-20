@@ -1,0 +1,47 @@
+import { Command as $Command } from "@smithy/smithy-client";
+import { MetadataBearer as __MetadataBearer } from "@smithy/types";
+import { GetAdapterRequest, GetAdapterResponse } from "../models/models_0";
+import {
+  ServiceInputTypes,
+  ServiceOutputTypes,
+  TextractClientResolvedConfig,
+} from "../TextractClient";
+export { __MetadataBearer };
+export { $Command };
+export interface GetAdapterCommandInput extends GetAdapterRequest {}
+export interface GetAdapterCommandOutput
+  extends GetAdapterResponse,
+    __MetadataBearer {}
+declare const GetAdapterCommand_base: {
+  new (
+    input: GetAdapterCommandInput
+  ): import("@smithy/smithy-client").CommandImpl<
+    GetAdapterCommandInput,
+    GetAdapterCommandOutput,
+    TextractClientResolvedConfig,
+    ServiceInputTypes,
+    ServiceOutputTypes
+  >;
+  new (
+    input: GetAdapterCommandInput
+  ): import("@smithy/smithy-client").CommandImpl<
+    GetAdapterCommandInput,
+    GetAdapterCommandOutput,
+    TextractClientResolvedConfig,
+    ServiceInputTypes,
+    ServiceOutputTypes
+  >;
+  getEndpointParameterInstructions(): import("@smithy/middleware-endpoint").EndpointParameterInstructions;
+};
+export declare class GetAdapterCommand extends GetAdapterCommand_base {
+  protected static __types: {
+    api: {
+      input: GetAdapterRequest;
+      output: GetAdapterResponse;
+    };
+    sdk: {
+      input: GetAdapterCommandInput;
+      output: GetAdapterCommandOutput;
+    };
+  };
+}
