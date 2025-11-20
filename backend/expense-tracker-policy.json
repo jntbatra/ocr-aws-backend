@@ -1,0 +1,38 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["s3:*"],
+      "Resource": [
+        "arn:aws:s3:::expense-tracker-receipts-*",
+        "arn:aws:s3:::expense-tracker-receipts-*/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["dynamodb:*"],
+      "Resource": ["arn:aws:dynamodb:*:*:table/expense-tracker-*"]
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["textract:*"],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["sns:*"],
+      "Resource": ["arn:aws:sns:*:*:monthly-expense-summary"]
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["cognito-idp:*", "cognito-identity:*"],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["ec2:*", "cloudformation:*", "iam:*"],
+      "Resource": "*"
+    }
+  ]
+}

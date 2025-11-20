@@ -1,0 +1,242 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Expense Tracker Infrastructure - Raw AWS"
+
+Parameters:
+  InstanceType:
+    Type: String
+    Description: EC2 instance type
+    Default: t3.micro
+    AllowedValues:
+      - t3.micro
+      - t3.small
+      - t3.medium
+
+Resources:
+  # VPC and Networking
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: expense-tracker-vpc
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: expense-tracker-igw
+
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: expense-tracker-public-subnet
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: expense-tracker-public-rt
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+
+  # Security Groups
+  WebServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable HTTP and SSH access
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: expense-tracker-web-sg
+
+  # S3 Bucket
+  ReceiptBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "expense-tracker-receipts-${AWS::AccountId}-${AWS::Region}"
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ["*"]
+            AllowedMethods: [GET, PUT, HEAD]
+            AllowedOrigins: ["*"]
+            MaxAge: 3000
+
+  # DynamoDB Table
+  ExpenseTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: expenseId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+        - AttributeName: expenseId
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+
+  # SNS Topic
+  MonthlySummaryTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: monthly-expense-summary
+
+  # Cognito User Pool
+  CognitoUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: expense-tracker-users
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+      AutoVerifiedAttributes:
+        - email
+      UsernameAttributes:
+        - email
+
+  CognitoUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref CognitoUserPool
+      ClientName: expense-tracker-client
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_ADMIN_USER_PASSWORD_AUTH
+
+  # IAM Role for EC2
+  EC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: expense-tracker-ec2-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+        - arn:aws:iam::aws:policy/AmazonTextractFullAccess
+        - arn:aws:iam::aws:policy/AmazonSNSFullAccess
+        - arn:aws:iam::aws:policy/AmazonCognitoPowerUser
+
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref EC2Role
+
+  # EC2 Instance
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      KeyName: my_key
+      ImageId: ami-0eb5549427fc55d57 # Amazon Linux 2 AMI
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeviceIndex: 0
+          GroupSet:
+            - !Ref WebServerSecurityGroup
+          SubnetId: !Ref PublicSubnet
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum update -y
+          yum install -y nc
+
+          # Start a simple netcat server that responds to HTTP
+          while true; do
+            echo -e "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{\"message\": \"Expense Tracker API is running!\", \"timestamp\": \"2025-11-20\", \"method\": \"GET\"}" | nc -l -p 3000 -q 1
+          done
+
+      Tags:
+        - Key: Name
+          Value: expense-tracker-server
+
+Outputs:
+  EC2PublicIP:
+    Description: Public IP of the EC2 instance
+    Value: !GetAtt EC2Instance.PublicIp
+    Export:
+      Name: ExpenseTrackerEC2IP
+
+  ReceiptBucketName:
+    Description: S3 Bucket for storing receipts
+    Value: !Ref ReceiptBucket
+    Export:
+      Name: ExpenseTrackerBucket
+
+  ExpenseTableName:
+    Description: DynamoDB Table for expenses
+    Value: !Ref ExpenseTable
+    Export:
+      Name: ExpenseTrackerTable
+
+  CognitoUserPoolId:
+    Description: Cognito User Pool ID
+    Value: !Ref CognitoUserPool
+    Export:
+      Name: ExpenseTrackerUserPool
+
+  CognitoClientId:
+    Description: Cognito User Pool Client ID
+    Value: !Ref CognitoUserPoolClient
+    Export:
+      Name: ExpenseTrackerClient

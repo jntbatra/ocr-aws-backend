@@ -29,7 +29,8 @@ export const handler = async (event) => {
     }
 
     // 3. Save to DynamoDB
-    const userId = "default-user"; // Placeholder
+    const userId =
+      event.requestContext?.authorizer?.claims?.sub || "default-user";
 
     const receiptUrl = `https://${BUCKET_NAME}.s3.amazonaws.com/${key}`;
     const expenseItem = createExpenseItem(userId, extractedData, receiptUrl);

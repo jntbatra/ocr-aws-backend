@@ -1,11 +1,11 @@
-import { getExpensesByUser } from '../utils/dynamo.js';
-import { successResponse, errorResponse } from '../utils/response.js';
+import { getExpensesByUser } from "../utils/dynamo.js";
+import { successResponse, errorResponse } from "../utils/response.js";
 
 export const handler = async (event) => {
   try {
-    // In a real app, userId comes from the authorizer context
-    // const userId = event.requestContext.authorizer.claims.sub;
-    const userId = "default-user"; // Placeholder for demo
+    // Get userId from Cognito authorizer
+    const userId =
+      event.requestContext?.authorizer?.claims?.sub || "default-user";
 
     const expenses = await getExpensesByUser(userId);
 
