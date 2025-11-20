@@ -187,7 +187,7 @@ Resources:
     Properties:
       InstanceType: !Ref InstanceType
       KeyName: my_key
-      ImageId: ami-0eb5549427fc55d57 # Amazon Linux 2 AMI
+      ImageId: ami-0f457776b2f2411c1 # Ubuntu 22.04 LTS AMI
       NetworkInterfaces:
         - AssociatePublicIpAddress: true
           DeviceIndex: 0
@@ -198,13 +198,39 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          yum update -y
-          yum install -y nc
+          apt update -y
+          apt install -y curl git
 
-          # Start a simple netcat server that responds to HTTP
-          while true; do
-            echo -e "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{\"message\": \"Expense Tracker API is running!\", \"timestamp\": \"2025-11-20\", \"method\": \"GET\"}" | nc -l -p 3000 -q 1
-          done
+          # Install Node.js 20 (LTS)
+          curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+          apt install -y nodejs
+
+          # Install PM2
+          npm install -g pm2
+
+          # Clone the repository
+          cd /home/ubuntu
+          git clone https://github.com/jntbatra/ocr-aws-backend.git app
+          cd app/backend
+
+          # Install dependencies
+          npm install
+
+          # Create environment configuration
+          cat > .env << EOF
+          TABLE_NAME=${ExpenseTable}
+          UPLOAD_BUCKET=${ReceiptBucket}
+          SNS_TOPIC_ARN=${MonthlySummaryTopic}
+          COGNITO_USER_POOL_ID=${CognitoUserPool}
+          COGNITO_CLIENT_ID=${CognitoUserPoolClient}
+          PORT=3000
+          JWT_SECRET=your-production-secret-key
+          EOF
+
+          # Start the application
+          pm2 start server.js --name expense-tracker
+          pm2 startup
+          pm2 save
 
       Tags:
         - Key: Name
